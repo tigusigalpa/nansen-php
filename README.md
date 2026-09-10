@@ -9,7 +9,6 @@
 [![PHP Version](https://img.shields.io/badge/php-%5E8.1-8892BF.svg)](https://php.net)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Latest Stable Version](https://img.shields.io/packagist/v/tigusigalpa/nansen-php.svg)](https://packagist.org/packages/tigusigalpa/nansen-php)
-[![Total Downloads](https://img.shields.io/packagist/dt/tigusigalpa/nansen-php.svg)](https://packagist.org/packages/tigusigalpa/nansen-php)
 [![GitHub Release](https://img.shields.io/github/v/release/tigusigalpa/nansen-php?style=flat-square)](https://github.com/tigusigalpa/nansen-php/releases)
 
 > A PHP client for the [Nansen AI API](https://docs.nansen.ai/). Works in any PHP 8.1+ project, and comes with proper
