@@ -21,7 +21,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
-      - uses: ramsey/composer-install@v3
+      - uses: ramsey/composer-install@v4
       - run: composer validate --strict
       - name: Check PHP syntax
         run: find src tests config examples -type f -name '*.php' -print0 | xargs -0 -n1 php -l
