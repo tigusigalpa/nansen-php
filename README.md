@@ -1,4 +1,4 @@
-# Nansen PHP
+# Nansen PHP/Laravel Client/SDK/Library
 
 ![Nansen AI PHP SDK](https://i.postimg.cc/nzPpynS6/nansen-ai-php-banner.jpg)
 
