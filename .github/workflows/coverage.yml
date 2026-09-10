@@ -19,7 +19,7 @@ jobs:
         with:
           php-version: '8.3'
           coverage: pcov
-      - uses: ramsey/composer-install@v3
+      - uses: ramsey/composer-install@v4
       - name: Generate Clover coverage report
         run: |
           mkdir -p coverage
