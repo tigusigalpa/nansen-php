@@ -1,0 +1,20 @@
+ignore:
+  - "examples/**/*"
+  - "config/**/*"
+
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 0%
+        flags:
+          - unittests
+    patch:
+      default:
+        target: 80%
+        threshold: 0%
+        flags:
+          - unittests
+
+comment: false

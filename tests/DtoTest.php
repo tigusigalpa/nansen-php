@@ -6,6 +6,7 @@ namespace Tigusigalpa\Nansen\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Tigusigalpa\Nansen\Dto\Meta;
+use Tigusigalpa\Nansen\Dto\PortfolioDefiHoldingsResponse;
 use Tigusigalpa\Nansen\Dto\Record;
 use Tigusigalpa\Nansen\Dto\RecordCollection;
 use Tigusigalpa\Nansen\Dto\SmartMoneyNetflowsResponse;
@@ -67,5 +68,32 @@ final class DtoTest extends TestCase
         self::assertSame(50, $meta->offset);
         self::assertSame(100, $meta->total);
         self::assertTrue($meta->hasMore);
+    }
+
+    public function test_v1_pagination_metadata_is_exposed(): void
+    {
+        $response = new SmartMoneyNetflowsResponse([
+            'data' => [],
+            'pagination' => ['page' => 2, 'per_page' => 25, 'is_last_page' => false],
+        ]);
+
+        self::assertSame(2, $response->meta?->page);
+        self::assertSame(25, $response->meta?->perPage);
+        self::assertFalse($response->meta?->isLastPage);
+        self::assertTrue($response->meta?->hasMore);
+    }
+
+    public function test_portfolio_response_exposes_summary_and_protocols(): void
+    {
+        $response = new PortfolioDefiHoldingsResponse([
+            'summary' => ['total_value_usd' => 125.5],
+            'protocols' => [['protocol_name' => 'Aave', 'chain' => 'ethereum']],
+        ]);
+
+        self::assertSame(125.5, $response->summary?->total_value_usd);
+        self::assertCount(1, $response->protocols);
+        self::assertSame('Aave', $response->protocols->first()?->protocol_name);
+        self::assertSame($response->protocols, $response->items);
+        self::assertNull($response->meta);
     }
 }

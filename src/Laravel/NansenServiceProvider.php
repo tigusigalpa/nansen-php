@@ -30,6 +30,13 @@ final class NansenServiceProvider extends ServiceProvider
                         'Configured Nansen HTTP client must implement ' . ClientInterface::class,
                     );
                 }
+            } elseif ($app->bound(ClientInterface::class)) {
+                $httpClient = $app->make(ClientInterface::class);
+                if (!$httpClient instanceof ClientInterface) {
+                    throw new \InvalidArgumentException(
+                        'Bound Nansen HTTP client must implement ' . ClientInterface::class,
+                    );
+                }
             }
 
             $nansenConfig = Config::fromArray($config);

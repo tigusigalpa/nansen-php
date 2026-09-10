@@ -19,6 +19,7 @@ $client = NansenClient::create([
     'timeout' => 30,
     'retries' => 3,
     'retry_delay' => 1,
+    'max_retry_delay' => 30,
 ]);
 
 echo "Nansen client initialized successfully.\n";

@@ -1,0 +1,42 @@
+name: Coverage
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: PHPUnit coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: pcov
+      - uses: ramsey/composer-install@v3
+      - name: Generate Clover coverage report
+        run: |
+          mkdir -p coverage
+          vendor/bin/phpunit --coverage-clover coverage/clover.xml --coverage-text
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clover-coverage
+          path: coverage/clover.xml
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage/clover.xml
+          flags: unittests
+          name: nansen-php
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false

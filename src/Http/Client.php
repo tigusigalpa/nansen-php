@@ -20,6 +20,8 @@ use Tigusigalpa\Nansen\Exceptions\UnauthorizedException;
 
 final class Client
 {
+    private const USER_AGENT = 'nansen-php/1.0 (+https://github.com/tigusigalpa/nansen-php)';
+
     private readonly string $baseUri;
 
     private ?ClientInterface $resolvedClient = null;
@@ -53,28 +55,40 @@ final class Client
         $url = $this->baseUri . '/' . ltrim($uri, '/');
         $payload = $this->filterBody($body);
 
-        $request = $requestFactory->createRequest(strtoupper($method), $url)
-            ->withHeader('apiKey', $this->config->apiKey)
-            ->withHeader('Content-Type', 'application/json')
-            ->withHeader('Accept', 'application/json');
-
+        $encodedPayload = null;
         if ($payload !== []) {
             try {
-                $stream = $streamFactory->createStream(json_encode($payload, JSON_THROW_ON_ERROR));
+                $encodedPayload = json_encode($payload, JSON_THROW_ON_ERROR);
             } catch (JsonException $e) {
                 throw new ApiException('Failed to encode request body: ' . $e->getMessage(), 0, $e);
             }
-            $request = $request->withBody($stream);
         }
 
         $lastException = null;
         $maxAttempts = max(0, $this->config->retries);
 
         for ($attempt = 0; $attempt <= $maxAttempts; $attempt++) {
+            $request = $requestFactory->createRequest(strtoupper($method), $url)
+                ->withHeader('apiKey', $this->config->apiKey)
+                ->withHeader('Content-Type', 'application/json')
+                ->withHeader('Accept', 'application/json')
+                ->withHeader('User-Agent', self::USER_AGENT);
+
+            if ($encodedPayload !== null) {
+                $request = $request->withBody($streamFactory->createStream($encodedPayload));
+            }
+
             try {
                 $response = $client->sendRequest($request);
             } catch (ClientExceptionInterface $e) {
-                throw new ApiException('HTTP request failed: ' . $e->getMessage(), 0, $e);
+                $lastException = new ApiException('HTTP request failed: ' . $e->getMessage(), 0, $e);
+
+                if ($attempt < $maxAttempts) {
+                    $this->sleepForBackoff($attempt);
+                    continue;
+                }
+
+                throw $lastException;
             }
 
             $status = $response->getStatusCode();
@@ -116,9 +130,6 @@ final class Client
         return new GuzzleClient([
             'timeout' => $this->config->timeout,
             'http_errors' => false,
-            'headers' => [
-                'User-Agent' => 'tigusigalpa/nansen-php',
-            ],
         ]);
     }
 
@@ -171,10 +182,10 @@ final class Client
     private function buildRateLimitException(ResponseInterface $response): RateLimitException
     {
         $retryAfter = $this->readHeaderInt($response, 'Retry-After');
-        $remaining = max(
-            $this->readHeaderInt($response, 'X-RateLimit-Remaining'),
-            $this->readHeaderInt($response, 'RateLimit-Remaining'),
-        );
+        $remaining = $this->readHeaderInt($response, 'RateLimit-Remaining');
+        if ($remaining === 0) {
+            $remaining = $this->readHeaderInt($response, 'X-RateLimit-Remaining');
+        }
 
         return new RateLimitException(
             $this->extractErrorMessage($response),
@@ -192,11 +203,12 @@ final class Client
 
         try {
             $decoded = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
-            if (is_array($decoded) && isset($decoded['message']) && is_string($decoded['message'])) {
-                return $decoded['message'];
-            }
-            if (is_array($decoded) && isset($decoded['error']) && is_string($decoded['error'])) {
-                return $decoded['error'];
+            if (is_array($decoded)) {
+                foreach (['message', 'error', 'detail'] as $key) {
+                    if (isset($decoded[$key]) && is_string($decoded[$key])) {
+                        return $decoded[$key];
+                    }
+                }
             }
         } catch (JsonException) {
             // Fall back to raw body.
@@ -236,19 +248,34 @@ final class Client
     private function sleepForRetry(ResponseInterface $response, int $attempt): void
     {
         $retryAfter = $this->readHeaderInt($response, 'Retry-After');
-        $baseDelay = max(1, $this->config->retryDelay);
-        $exponential = $baseDelay * (2 ** $attempt);
+        $rateLimitReset = $this->readHeaderInt($response, 'RateLimit-Reset');
+        if ($rateLimitReset === 0) {
+            $rateLimitReset = $this->readHeaderInt($response, 'X-RateLimit-Reset');
+        }
 
-        $delay = $retryAfter > 0 ? $retryAfter : $exponential;
+        $delay = $retryAfter > 0
+            ? $retryAfter
+            : ($rateLimitReset > 0 ? $rateLimitReset : $this->backoffDelay($attempt));
 
-        usleep($delay * 1_000_000);
+        $this->sleep($delay);
     }
 
     private function sleepForBackoff(int $attempt): void
     {
-        $baseDelay = max(1, $this->config->retryDelay);
-        $delay = $baseDelay * (2 ** $attempt);
+        $this->sleep($this->backoffDelay($attempt));
+    }
 
-        usleep($delay * 1_000_000);
+    private function backoffDelay(int $attempt): int
+    {
+        $baseDelay = max(1, $this->config->retryDelay);
+        $maxDelay = max($baseDelay, $this->config->maxRetryDelay);
+        $multiplier = 2 ** min($attempt, 30);
+
+        return min($maxDelay, $baseDelay * $multiplier);
+    }
+
+    private function sleep(int $delay): void
+    {
+        usleep(max(0, $delay) * 1_000_000);
     }
 }

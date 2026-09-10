@@ -19,6 +19,7 @@ final class ConfigTest extends TestCase
         self::assertSame(30, $config->timeout);
         self::assertSame(3, $config->retries);
         self::assertSame(1, $config->retryDelay);
+        self::assertSame(30, $config->maxRetryDelay);
         self::assertNull($config->httpClient);
     }
 
@@ -30,6 +31,7 @@ final class ConfigTest extends TestCase
             'timeout' => 10,
             'retries' => 5,
             'retry_delay' => 2,
+            'max_retry_delay' => 15,
             'http_client' => 'custom.client',
         ]);
 
@@ -38,6 +40,7 @@ final class ConfigTest extends TestCase
         self::assertSame(10, $config->timeout);
         self::assertSame(5, $config->retries);
         self::assertSame(2, $config->retryDelay);
+        self::assertSame(15, $config->maxRetryDelay);
         self::assertSame('custom.client', $config->httpClient);
     }
 
@@ -46,5 +49,19 @@ final class ConfigTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         new Config('');
+    }
+
+    public function test_invalid_base_uri_throws(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        new Config('key', 'https://api.nansen.ai?tenant=wrong');
+    }
+
+    public function test_invalid_retry_configuration_throws(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        new Config('key', retries: 1, retryDelay: 0);
     }
 }

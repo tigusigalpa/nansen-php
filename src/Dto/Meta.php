@@ -11,6 +11,9 @@ final class Meta
         public readonly ?int $offset = null,
         public readonly ?int $total = null,
         public readonly ?bool $hasMore = null,
+        public readonly ?int $page = null,
+        public readonly ?int $perPage = null,
+        public readonly ?bool $isLastPage = null,
     ) {
     }
 }

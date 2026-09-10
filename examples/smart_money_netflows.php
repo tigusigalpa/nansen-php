@@ -14,19 +14,15 @@ $netflows = $client
     ->smartMoney()
     ->netflows()
     ->chains(['ethereum'])
-    ->filters([
-        'timeframe' => '24h',
-    ])
-    ->orderBy('timestamp', 'desc')
-    ->limit(10)
+    ->orderBy('net_flow_24h_usd', 'desc')
+    ->page(1, 10)
     ->get();
 
 foreach ($netflows->items as $entry) {
     printf(
-        "Chain: %s | Netflow: %s | Timestamp: %s\n",
+        "Chain: %s | 24h Netflow: %s\n",
         $entry->chain ?? 'n/a',
-        $entry->netflow ?? $entry->netflow_usd ?? 'n/a',
-        $entry->timestamp ?? 'n/a',
+        $entry->net_flow_24h_usd ?? 'n/a',
     );
 }
 

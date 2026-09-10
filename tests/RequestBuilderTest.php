@@ -35,8 +35,8 @@ final class RequestBuilderTest extends TestCase
             ->chains(['ethereum', 'arbitrum'])
             ->filters(['token' => ['symbol' => 'WETH']])
             ->orderBy('timestamp', 'desc')
-            ->limit(10)
-            ->offset(0);
+            ->perPage(10)
+            ->page(1);
 
         $response = $builder->get();
 
@@ -44,6 +44,28 @@ final class RequestBuilderTest extends TestCase
         self::assertCount(1, $response->items);
         self::assertSame('ethereum', $response->items[0]?->chain);
         self::assertSame(10, $response->meta?->limit);
+    }
+
+    public function test_top_level_fields_and_sort_orders_are_serialized_correctly(): void
+    {
+        $mock = new MockHttpClient();
+        $mock->addResponse(new Response(200, [], json_encode(['data' => []])));
+        $http = new HttpClient(new Config('key'), $mock);
+
+        (new RequestBuilder($http, 'POST', 'api/v1/tgm/flow-intelligence', SmartMoneyNetflowsResponse::class))
+            ->withAll(['chain' => 'ethereum', 'token_address' => '0xabc'])
+            ->orderBy('value_usd', 'desc')
+            ->orderBy('token_symbol')
+            ->get();
+
+        $sentBody = json_decode((string) $mock->getRequests()[0]->getBody(), true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertSame('ethereum', $sentBody['chain']);
+        self::assertSame('0xabc', $sentBody['token_address']);
+        self::assertSame([
+            ['field' => 'value_usd', 'direction' => 'desc'],
+            ['field' => 'token_symbol', 'direction' => 'asc'],
+        ], $sentBody['order_by']);
     }
 
     public function test_builder_is_immutable(): void

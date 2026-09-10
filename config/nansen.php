@@ -59,6 +59,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Maximum Retry Delay
+    |--------------------------------------------------------------------------
+    |
+    | Caps exponential retry backoff in seconds. A `Retry-After` or
+    | rate-limit reset header sent by the API still takes precedence.
+    |
+    */
+    'max_retry_delay' => (int) env('NANSEN_MAX_RETRY_DELAY', 30),
+
+    /*
+    |--------------------------------------------------------------------------
     | HTTP Client
     |--------------------------------------------------------------------------
     |

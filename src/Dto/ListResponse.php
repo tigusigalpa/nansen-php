@@ -55,11 +55,16 @@ abstract class ListResponse extends Dto
             return null;
         }
 
+        $isLastPage = isset($meta['is_last_page']) ? (bool) $meta['is_last_page'] : null;
+
         return new Meta(
             limit: isset($meta['limit']) && is_numeric($meta['limit']) ? (int) $meta['limit'] : null,
             offset: isset($meta['offset']) && is_numeric($meta['offset']) ? (int) $meta['offset'] : null,
             total: isset($meta['total']) && is_numeric($meta['total']) ? (int) $meta['total'] : null,
-            hasMore: isset($meta['has_more']) ? (bool) $meta['has_more'] : null,
+            hasMore: isset($meta['has_more']) ? (bool) $meta['has_more'] : ($isLastPage !== null ? !$isLastPage : null),
+            page: isset($meta['page']) && is_numeric($meta['page']) ? (int) $meta['page'] : null,
+            perPage: isset($meta['per_page']) && is_numeric($meta['per_page']) ? (int) $meta['per_page'] : null,
+            isLastPage: $isLastPage,
         );
     }
 }

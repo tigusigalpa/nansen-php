@@ -14,15 +14,15 @@ $screener = $client
     ->tokenGodMode()
     ->tokenScreener()
     ->chains(['ethereum', 'arbitrum'])
+    ->with('timeframe', '24h')
     ->filters([
         'market_cap_usd' => [
             'min' => 1_000_000,
             'max' => 500_000_000,
         ],
-        'signal' => ['buy', 'strong_buy'],
     ])
     ->orderBy('market_cap_usd', 'desc')
-    ->limit(25)
+    ->page(1, 25)
     ->get();
 
 foreach ($screener->items as $signal) {

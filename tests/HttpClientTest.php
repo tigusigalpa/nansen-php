@@ -29,6 +29,7 @@ final class HttpClientTest extends TestCase
         self::assertSame('https://api.nansen.ai/api/v1/smart-money/netflow', (string) $request->getUri());
         self::assertSame('test-key', $request->getHeaderLine('apiKey'));
         self::assertSame('application/json', $request->getHeaderLine('Content-Type'));
+        self::assertSame('nansen-php/1.0 (+https://github.com/tigusigalpa/nansen-php)', $request->getHeaderLine('User-Agent'));
     }
 
     public function test_throws_unauthorized_on_401(): void
@@ -82,6 +83,23 @@ final class HttpClientTest extends TestCase
             self::assertSame(5, $e->retryAfter());
             self::assertSame(2, $e->remaining());
         }
+    }
+
+    public function test_retries_on_transient_server_error_then_succeeds(): void
+    {
+        $mock = new MockHttpClient();
+        $mock->addResponse(new Response(503, [], json_encode(['detail' => 'temporarily unavailable'])));
+        $mock->addResponse(new Response(200, [], json_encode(['data' => []])));
+
+        $client = new HttpClient(new Config('key', retries: 1, retryDelay: 1), $mock);
+        $result = $client->send('POST', 'api/v1/smart-money/netflow', ['chains' => ['ethereum']]);
+
+        self::assertSame(['data' => []], $result);
+        self::assertCount(2, $mock->getRequests());
+        self::assertSame(
+            ['chains' => ['ethereum']],
+            json_decode((string) $mock->getRequests()[1]->getBody(), true, 512, JSON_THROW_ON_ERROR),
+        );
     }
 
     public function test_empty_body_returns_empty_array(): void

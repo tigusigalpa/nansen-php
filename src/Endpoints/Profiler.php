@@ -16,33 +16,57 @@ final class Profiler
     {
     }
 
-    public function addressBalance(string $address): RequestBuilder
+    public function addressBalance(string $address, string $chain = 'all'): RequestBuilder
+    {
+        return $this->addressCurrentBalance($address, $chain);
+    }
+
+    public function addressCurrentBalance(string $address, string $chain = 'all'): RequestBuilder
     {
         return (new RequestBuilder(
             $this->http,
             'POST',
             'api/v1/profiler/address/current-balance',
             AddressBalanceResponse::class,
-        ))->filters(['address' => $address]);
+        ))->withAll([
+            'address' => $address,
+            'chain' => $chain,
+        ]);
     }
 
-    public function addressDexTrades(string $address): RequestBuilder
+    /**
+     * @param array{from: string, to: string}|null $date
+     */
+    public function addressDexTrades(string $address, ?string $chain = null, ?array $date = null): RequestBuilder
     {
-        return (new RequestBuilder(
+        $builder = (new RequestBuilder(
             $this->http,
             'POST',
             'api/v1/profiler/dex-trades',
             AddressDexTradesResponse::class,
-        ))->filters(['address' => $address]);
+        ))->with('address', $address);
+
+        if ($chain !== null) {
+            $builder = $builder->with('chain', $chain);
+        }
+
+        if ($date !== null) {
+            $builder = $builder->with('date', $date);
+        }
+
+        return $builder;
     }
 
-    public function addressLabels(string $address): RequestBuilder
+    public function addressLabels(string $address, string $chain = 'all'): RequestBuilder
     {
         return (new RequestBuilder(
             $this->http,
             'POST',
-            'api/beta/profiler/address/labels',
+            'api/v1/profiler/address/labels',
             AddressLabelsResponse::class,
-        ))->filters(['address' => $address]);
+        ))->withAll([
+            'address' => $address,
+            'chain' => $chain,
+        ]);
     }
 }

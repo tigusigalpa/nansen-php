@@ -31,8 +31,41 @@ final class RequestBuilder
      */
     public function chains(array $chains): self
     {
+        return $this->with('chains', array_values($chains));
+    }
+
+    /**
+     * Set a top-level API request field.
+     *
+     * Nansen v1 expects request parameters such as `address`, `chain`, and
+     * `token_address` at the top level, not inside the `filters` object.
+     */
+    public function with(string $field, mixed $value): self
+    {
+        if ($field === '') {
+            throw new InvalidArgumentException('Request field name cannot be empty.');
+        }
+
         $clone = clone $this;
-        $clone->body['chains'] = array_values($chains);
+        $clone->body[$field] = $value;
+
+        return $clone;
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     */
+    public function withAll(array $fields): self
+    {
+        $clone = clone $this;
+
+        foreach ($fields as $field => $value) {
+            if (!is_string($field) || $field === '') {
+                throw new InvalidArgumentException('Request field names must be non-empty strings.');
+            }
+
+            $clone->body[$field] = $value;
+        }
 
         return $clone;
     }
@@ -50,6 +83,10 @@ final class RequestBuilder
 
     public function orderBy(string $field, string|SortDirection $direction = 'asc'): self
     {
+        if ($field === '') {
+            throw new InvalidArgumentException('Sort field cannot be empty.');
+        }
+
         if ($direction instanceof SortDirection) {
             $directionValue = $direction->value;
         } else {
@@ -63,7 +100,7 @@ final class RequestBuilder
         }
 
         $clone = clone $this;
-        $clone->body['order_by'] = [
+        $clone->body['order_by'][] = [
             'field' => $field,
             'direction' => $directionValue,
         ];
@@ -71,14 +108,19 @@ final class RequestBuilder
         return $clone;
     }
 
+    /**
+     * @deprecated Use perPage(). Kept as a compatibility alias for the
+     *             Nansen v1 `pagination.per_page` field.
+     */
     public function limit(int $limit): self
     {
-        $clone = clone $this;
-        $clone->body['pagination']['limit'] = max(1, $limit);
-
-        return $clone;
+        return $this->perPage($limit);
     }
 
+    /**
+     * @deprecated Nansen v1 uses page()/perPage() pagination. This method
+     *             remains for legacy endpoints that still accept an offset.
+     */
     public function offset(int $offset): self
     {
         $clone = clone $this;
@@ -95,6 +137,14 @@ final class RequestBuilder
         if ($perPage !== null) {
             $clone->body['pagination']['per_page'] = max(1, $perPage);
         }
+
+        return $clone;
+    }
+
+    public function perPage(int $perPage): self
+    {
+        $clone = clone $this;
+        $clone->body['pagination']['per_page'] = max(1, $perPage);
 
         return $clone;
     }

@@ -14,14 +14,14 @@ $address = '0x742d35Cc6634C0532925a3b8D4e6D3b6e8D3e8B1';
 
 $balance = $client
     ->profiler()
-    ->addressBalance($address)
+    ->addressCurrentBalance($address, 'ethereum')
     ->get();
 
 foreach ($balance->items as $token) {
     printf(
         "Token: %s | Balance: %s | USD Value: %s\n",
-        $token->token_symbol ?? $token->contract_address ?? 'unknown',
-        $token->balance ?? 'n/a',
+        $token->token_symbol ?? $token->token_address ?? 'unknown',
+        $token->token_amount ?? 'n/a',
         $token->value_usd ?? 'n/a',
     );
 }

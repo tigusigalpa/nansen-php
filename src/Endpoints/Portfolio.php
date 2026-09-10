@@ -14,13 +14,13 @@ final class Portfolio
     {
     }
 
-    public function defiHoldings(string $address): RequestBuilder
+    public function defiHoldings(string $walletAddress): RequestBuilder
     {
         return (new RequestBuilder(
             $this->http,
             'POST',
             'api/v1/portfolio/defi-holdings',
             PortfolioDefiHoldingsResponse::class,
-        ))->filters(['address' => $address]);
+        ))->with('wallet_address', $walletAddress);
     }
 }
